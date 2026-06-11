@@ -1,0 +1,776 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Belge Yönetimi — PDF Chatbot Admin</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: #f0f2f5;
+      min-height: 100vh;
+      padding: 40px 20px;
+    }
+
+    .container {
+      max-width: 720px;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+    }
+
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    header h1 { font-size: 1.4rem; color: #1a1a2e; }
+    header a {
+      font-size: 0.85rem;
+      color: #666;
+      text-decoration: none;
+    }
+    header a:hover { color: #1a1a2e; }
+
+    .card {
+      background: #fff;
+      border-radius: 14px;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.07);
+      padding: 28px;
+    }
+
+    .card h2 {
+      font-size: 1rem;
+      color: #1a1a2e;
+      margin-bottom: 18px;
+    }
+
+    /* Upload area */
+    #drop-zone {
+      border: 2px dashed #d0d0d0;
+      border-radius: 10px;
+      padding: 40px 20px;
+      text-align: center;
+      cursor: pointer;
+      transition: border-color 0.2s, background 0.2s;
+      color: #888;
+      font-size: 0.95rem;
+    }
+
+    #drop-zone.dragover {
+      border-color: #1a1a2e;
+      background: #f5f5fa;
+    }
+
+    #drop-zone .icon { font-size: 2.2rem; margin-bottom: 10px; }
+    #drop-zone p { margin-top: 6px; font-size: 0.82rem; color: #aaa; }
+
+    #file-input { display: none; }
+
+    #upload-btn {
+      margin-top: 16px;
+      padding: 11px 28px;
+      background: #1a1a2e;
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      font-size: 0.95rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s;
+      width: 100%;
+    }
+    #upload-btn:hover:not(:disabled) { background: #2d2d4e; }
+    #upload-btn:disabled { background: #bbb; cursor: not-allowed; }
+
+    #upload-status {
+      margin-top: 12px;
+      font-size: 0.88rem;
+      min-height: 20px;
+      text-align: center;
+    }
+    #upload-status.ok  { color: #16a34a; }
+    #upload-status.err { color: #dc2626; }
+
+    /* Progress bar */
+    #progress-wrap {
+      margin-top: 12px;
+      height: 6px;
+      background: #eee;
+      border-radius: 99px;
+      overflow: hidden;
+      display: none;
+    }
+    #progress-bar {
+      height: 100%;
+      width: 0%;
+      background: #1a1a2e;
+      border-radius: 99px;
+      transition: width 0.3s;
+    }
+
+    /* Document list */
+    #doc-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .doc-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 13px 16px;
+      background: #f8f8fb;
+      border-radius: 9px;
+      border: 1px solid #eee;
+    }
+
+    .doc-icon { font-size: 1.3rem; }
+
+    .doc-info { flex: 1; }
+    .doc-name { font-size: 0.92rem; font-weight: 600; color: #1a1a2e; }
+    .doc-meta { font-size: 0.78rem; color: #999; margin-top: 2px; }
+
+    .doc-del {
+      background: none;
+      border: 1.5px solid #fca5a5;
+      color: #dc2626;
+      border-radius: 7px;
+      padding: 5px 12px;
+      font-size: 0.82rem;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    .doc-del:hover { background: #fef2f2; }
+
+    .empty-state {
+      text-align: center;
+      color: #bbb;
+      font-size: 0.9rem;
+      padding: 20px 0;
+    }
+
+    /* Analytics */
+    .analytics-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+    }
+    @media (max-width: 600px) { .analytics-grid { grid-template-columns: 1fr; } }
+
+    .rank-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 9px 0;
+      border-bottom: 1px solid #f0f0f0;
+      font-size: 0.88rem;
+    }
+    .rank-item:last-child { border-bottom: none; }
+    .rank-num {
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      background: #1a1a2e;
+      color: #fff;
+      font-size: 0.72rem;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+    .rank-q { flex: 1; color: #1a1a2e; }
+    .rank-c { font-weight: 700; color: #1a1a2e; white-space: nowrap; font-size: 0.82rem; }
+
+    .bar-chart { display: flex; align-items: flex-end; gap: 6px; height: 80px; margin-top: 8px; }
+    .bar-col { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 3px; }
+    .bar-fill {
+      width: 100%;
+      background: #1a1a2e;
+      border-radius: 4px 4px 0 0;
+      min-height: 4px;
+      transition: height 0.3s;
+    }
+    .bar-lbl { font-size: 0.65rem; color: #aaa; text-align: center; }
+    .bar-cnt { font-size: 0.72rem; font-weight: 700; color: #1a1a2e; }
+
+    .unans-item {
+      padding: 8px 0;
+      border-bottom: 1px solid #f0f0f0;
+      font-size: 0.85rem;
+    }
+    .unans-item:last-child { border-bottom: none; }
+    .unans-q { color: #1a1a2e; }
+    .unans-t { font-size: 0.75rem; color: #bbb; margin-top: 2px; }
+
+    /* Feedback */
+    .stats-row {
+      display: flex;
+      gap: 16px;
+      margin-bottom: 20px;
+    }
+    .stat-box {
+      flex: 1;
+      background: #f8f8fb;
+      border-radius: 9px;
+      padding: 16px;
+      text-align: center;
+      border: 1px solid #eee;
+    }
+    .stat-box .num { font-size: 1.8rem; font-weight: 700; color: #1a1a2e; }
+    .stat-box .lbl { font-size: 0.78rem; color: #999; margin-top: 2px; }
+    .stat-box.green .num { color: #16a34a; }
+    .stat-box.red   .num { color: #dc2626; }
+
+    .feedback-item {
+      padding: 12px 14px;
+      background: #f8f8fb;
+      border-radius: 8px;
+      border: 1px solid #eee;
+      margin-bottom: 8px;
+    }
+    .feedback-item .fi-q { font-size: 0.88rem; font-weight: 600; color: #1a1a2e; }
+    .feedback-item .fi-a { font-size: 0.8rem; color: #666; margin-top: 4px; white-space: pre-wrap; }
+    .feedback-item .fi-meta { font-size: 0.75rem; color: #bbb; margin-top: 6px; }
+    .badge-down { color: #dc2626; }
+    .badge-up   { color: #16a34a; }
+
+    /* Müşteri geri bildirimi badge */
+    .cf-badge {
+      display: inline-block; padding: 2px 8px; border-radius: 99px;
+      font-size: 0.72rem; font-weight: 700;
+    }
+    .cf-badge.sikayet  { background: #fef2f2; color: #dc2626; }
+    .cf-badge.oneri    { background: #fffbeb; color: #d97706; }
+    .cf-badge.gorus    { background: #f0fdf4; color: #16a34a; }
+
+    /* Özelleştirme */
+    .customize-grid { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+    @media(max-width:560px){ .customize-grid{ grid-template-columns:1fr; } }
+    .field label { display:block; font-size:.82rem; font-weight:600; color:#555; margin-bottom:5px; }
+    .field input[type="text"], .field textarea {
+      width:100%; padding:9px 12px; border:1.5px solid #ddd; border-radius:8px;
+      font-size:.9rem; outline:none; font-family:inherit; transition:border-color .2s;
+    }
+    .field input:focus, .field textarea:focus { border-color:#1a1a2e; }
+    .field textarea { resize:vertical; min-height:60px; }
+    .color-row { display:flex; align-items:center; gap:10px; }
+    .color-row input[type="color"] { width:44px; height:36px; border:1.5px solid #ddd; border-radius:8px; cursor:pointer; padding:2px; }
+    .color-hex { width:90px; padding:9px 10px; border:1.5px solid #ddd; border-radius:8px; font-size:.88rem; font-family:monospace; outline:none; }
+    .icon-grid { display:flex; gap:8px; flex-wrap:wrap; margin-top:4px; }
+    .icon-opt { font-size:1.4rem; cursor:pointer; padding:6px 10px; border-radius:8px; border:2px solid transparent; transition:border-color .15s; }
+    .icon-opt.selected { border-color:#1a1a2e; background:#f0f2f5; }
+    .preview-box {
+      background:#f0f2f5; border-radius:10px; padding:16px;
+      display:flex; align-items:center; gap:12px; margin-top:16px;
+    }
+    .preview-btn {
+      width:48px; height:48px; border-radius:50%; display:flex; align-items:center;
+      justify-content:center; font-size:20px; color:#fff; flex-shrink:0;
+      box-shadow:0 3px 10px rgba(0,0,0,0.2);
+    }
+    .preview-info .preview-name { font-weight:700; font-size:.95rem; color:#1a1a2e; }
+    .preview-info .preview-msg  { font-size:.82rem; color:#666; margin-top:2px; }
+    #save-btn {
+      margin-top:16px; padding:11px 28px; background:#1a1a2e; color:#fff;
+      border:none; border-radius:8px; font-size:.95rem; font-weight:600;
+      cursor:pointer; transition:background .2s; width:100%;
+    }
+    #save-btn:hover { background:#2d2d4e; }
+    #save-status { text-align:center; font-size:.85rem; margin-top:10px; min-height:18px; }
+    #save-status.ok  { color:#16a34a; }
+    #save-status.err { color:#dc2626; }
+
+    /* Widget snippet */
+    .snippet-box {
+      background: #1a1a2e;
+      color: #a8e6cf;
+      border-radius: 9px;
+      padding: 16px;
+      font-family: monospace;
+      font-size: 0.82rem;
+      position: relative;
+      word-break: break-all;
+    }
+
+    #copy-btn {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      background: #fff1;
+      color: #fff;
+      border: 1px solid #ffffff33;
+      border-radius: 6px;
+      padding: 4px 10px;
+      font-size: 0.78rem;
+      cursor: pointer;
+    }
+    #copy-btn:hover { background: #fff2; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>Belge Yönetimi — <span id="tenant-label" style="color:#666;font-weight:400;font-size:1rem;"></span></h1>
+      <div style="display:flex;gap:16px;align-items:center;">
+        <a href="/superadmin">← Tüm Müşteriler</a>
+        <a href="/logout" style="color:#dc2626;">Çıkış</a>
+      </div>
+    </header>
+
+    <!-- Upload -->
+    <div class="card">
+      <h2>PDF Yükle</h2>
+      <div id="drop-zone">
+        <div class="icon">📄</div>
+        <strong>Dosyayı buraya sürükle</strong> veya tıkla
+        <p>Yalnızca .pdf dosyaları — maks. 50 MB</p>
+      </div>
+      <input type="file" id="file-input" accept=".pdf" multiple />
+      <div id="progress-wrap"><div id="progress-bar"></div></div>
+      <div id="upload-status"></div>
+      <button id="upload-btn" disabled>Dosya Seçin</button>
+    </div>
+
+    <!-- Document list -->
+    <div class="card">
+      <h2>Yüklü Belgeler</h2>
+      <div id="doc-list"><p class="empty-state">Yükleniyor...</p></div>
+    </div>
+
+    <!-- Widget Özelleştirme -->
+    <div class="card">
+      <h2 style="margin-bottom:18px;">Widget Özelleştirme</h2>
+
+      <div class="customize-grid">
+        <div class="field">
+          <label>Bot Adı</label>
+          <input type="text" id="bot-name" placeholder="Destek Asistanı" />
+        </div>
+        <div class="field">
+          <label>Buton İkonu</label>
+          <div class="icon-grid" id="icon-grid">
+            <div class="icon-opt" data-icon="💬">💬</div>
+            <div class="icon-opt" data-icon="🤖">🤖</div>
+            <div class="icon-opt" data-icon="❓">❓</div>
+            <div class="icon-opt" data-icon="🛍️">🛍️</div>
+            <div class="icon-opt" data-icon="✉️">✉️</div>
+            <div class="icon-opt" data-icon="🙋">🙋</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="field" style="margin-top:14px;">
+        <label>Karşılama Mesajı</label>
+        <textarea id="welcome-msg" placeholder="Merhaba! Size nasıl yardımcı olabilirim?"></textarea>
+      </div>
+
+      <div class="field" style="margin-top:14px;">
+        <label>Marka Rengi</label>
+        <div class="color-row">
+          <input type="color" id="color-picker" value="#1a1a2e" />
+          <input type="text"  id="color-hex"    class="color-hex" value="#1a1a2e" maxlength="7" />
+        </div>
+      </div>
+
+      <!-- Önizleme -->
+      <div class="preview-box">
+        <div class="preview-btn" id="prev-btn">💬</div>
+        <div class="preview-info">
+          <div class="preview-name" id="prev-name">Destek Asistanı</div>
+          <div class="preview-msg"  id="prev-msg">Merhaba! Size nasıl yardımcı olabilirim?</div>
+        </div>
+      </div>
+
+      <button id="save-btn">Kaydet</button>
+      <div id="save-status"></div>
+    </div>
+
+    <!-- Analytics -->
+    <div class="card">
+      <h2 style="margin-bottom:16px;">Analitik</h2>
+      <div class="analytics-grid">
+
+        <!-- En çok sorulanlar -->
+        <div>
+          <h2 style="margin-bottom:10px;">En Çok Sorulan Sorular</h2>
+          <div id="top-questions"><p class="empty-state">Henüz soru yok.</p></div>
+        </div>
+
+        <!-- Günlük aktivite -->
+        <div>
+          <h2 style="margin-bottom:10px;">Günlük Aktivite</h2>
+          <div class="bar-chart" id="bar-chart"><p class="empty-state" style="font-size:.8rem">Henüz veri yok.</p></div>
+        </div>
+
+      </div>
+
+      <!-- Yanıtsız sorular (tam genişlik) -->
+      <h2 style="margin: 20px 0 10px;">Yanıtsız Kalan Sorular</h2>
+      <p style="font-size:.82rem;color:#999;margin-bottom:12px;">Chatbotun "belgede bilgi bulunamadı" dediği sorular — PDF'e eklenmesi önerilir.</p>
+      <div id="unanswered-list"><p class="empty-state">Henüz yanıtsız soru yok.</p></div>
+    </div>
+
+    <!-- Feedback -->
+    <div class="card">
+      <h2>Cevap Kalitesi</h2>
+      <div class="stats-row">
+        <div class="stat-box"><div class="num" id="total-count">—</div><div class="lbl">Toplam Puanlama</div></div>
+        <div class="stat-box green"><div class="num" id="up-count">—</div><div class="lbl">👍 Olumlu</div></div>
+        <div class="stat-box red"><div class="num" id="down-count">—</div><div class="lbl">👎 Olumsuz</div></div>
+        <div class="stat-box"><div class="num" id="sat-rate">—</div><div class="lbl">Memnuniyet</div></div>
+      </div>
+      <h2 style="margin-bottom:12px;">👎 Olumsuz Puanlanan Sorular</h2>
+      <div id="feedback-list"><p class="empty-state">Henüz olumsuz puanlama yok.</p></div>
+    </div>
+
+    <!-- Müşteri Geri Bildirimleri -->
+    <div class="card">
+      <h2>Müşteri Geri Bildirimleri</h2>
+      <p style="font-size:.83rem;color:#999;margin-bottom:16px;">Widget'taki 📝 butonu aracılığıyla gelen öneri, görüş ve şikayetler.</p>
+      <div class="stats-row">
+        <div class="stat-box"><div class="num" id="cf-total">—</div><div class="lbl">Toplam</div></div>
+        <div class="stat-box red"><div class="num" id="cf-complaints">—</div><div class="lbl">🔴 Şikayet</div></div>
+        <div class="stat-box"><div class="num" id="cf-suggestions" style="color:#d97706">—</div><div class="lbl">💡 Öneri</div></div>
+        <div class="stat-box green"><div class="num" id="cf-opinions">—</div><div class="lbl">💬 Görüş</div></div>
+      </div>
+      <div id="cf-list"><p class="empty-state">Henüz geri bildirim yok.</p></div>
+    </div>
+
+    <!-- Widget snippet -->
+    <div class="card">
+      <h2>Sitenize Ekleyin</h2>
+      <p style="font-size:.88rem;color:#666;margin-bottom:14px;">
+        Aşağıdaki kodu sitenizin <code>&lt;/body&gt;</code> kapanmadan önce yapıştırın:
+      </p>
+      <div class="snippet-box" id="snippet">
+        &lt;script src="<span id="widget-url"></span>"&gt;&lt;/script&gt;
+        <button id="copy-btn">Kopyala</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const BASE      = window.location.origin;
+    const TENANT    = new URLSearchParams(window.location.search).get("tenant") || "default";
+    const WIDGET_URL = `${BASE}/widget.js?tenant=${TENANT}`;
+    document.getElementById("widget-url").textContent = WIDGET_URL;
+    document.getElementById("tenant-label").textContent = TENANT;
+
+    // Copy snippet
+    document.getElementById("copy-btn").addEventListener("click", () => {
+      navigator.clipboard.writeText(`<script src="${WIDGET_URL}"><\/script>`);
+      const btn = document.getElementById("copy-btn");
+      btn.textContent = "Kopyalandı!";
+      setTimeout(() => btn.textContent = "Kopyala", 2000);
+    });
+
+    // Load documents
+    async function loadDocs() {
+      const list = document.getElementById("doc-list");
+      try {
+        const res = await fetch(`/documents?tenant=${TENANT}`);
+        const docs = await res.json();
+        if (!docs.length) {
+          list.innerHTML = '<p class="empty-state">Henüz belge yüklenmedi.</p>';
+          return;
+        }
+        list.innerHTML = docs.map(d => `
+          <div class="doc-item" id="doc-${CSS.escape(d.name)}">
+            <div class="doc-icon">📄</div>
+            <div class="doc-info">
+              <div class="doc-name">${d.name}</div>
+              <div class="doc-meta">${d.chunks} bölüm indekslendi</div>
+            </div>
+            <button class="doc-del" onclick="deleteDoc('${d.name}')">Sil</button>
+          </div>
+        `).join("");
+      } catch {
+        list.innerHTML = '<p class="empty-state">Belgeler yüklenemedi.</p>';
+      }
+    }
+
+    // Delete document
+    async function deleteDoc(name) {
+      if (!confirm(`"${name}" belgesini silmek istediğinize emin misiniz?`)) return;
+      const res = await fetch(`/documents/${encodeURIComponent(name)}?tenant=${TENANT}`, { method: "DELETE" });
+      if (res.ok) loadDocs();
+    }
+
+    // Upload
+    const dropZone  = document.getElementById("drop-zone");
+    const fileInput = document.getElementById("file-input");
+    const uploadBtn = document.getElementById("upload-btn");
+    const status    = document.getElementById("upload-status");
+    const progress  = document.getElementById("progress-wrap");
+    const bar       = document.getElementById("progress-bar");
+
+    let selectedFiles = [];
+
+    dropZone.addEventListener("click", () => fileInput.click());
+    dropZone.addEventListener("dragover", e => { e.preventDefault(); dropZone.classList.add("dragover"); });
+    dropZone.addEventListener("dragleave", () => dropZone.classList.remove("dragover"));
+    dropZone.addEventListener("drop", e => {
+      e.preventDefault();
+      dropZone.classList.remove("dragover");
+      setFiles([...e.dataTransfer.files].filter(f => f.name.endsWith(".pdf")));
+    });
+    fileInput.addEventListener("change", () => setFiles([...fileInput.files]));
+
+    function setFiles(files) {
+      selectedFiles = files;
+      if (!files.length) return;
+      uploadBtn.textContent = files.length === 1
+        ? `"${files[0].name}" yükle`
+        : `${files.length} dosya yükle`;
+      uploadBtn.disabled = false;
+      status.textContent = "";
+    }
+
+    uploadBtn.addEventListener("click", async () => {
+      if (!selectedFiles.length) return;
+      uploadBtn.disabled = true;
+      status.textContent = "";
+      progress.style.display = "block";
+      bar.style.width = "0%";
+
+      let done = 0;
+      const msgs = [];
+
+      for (const file of selectedFiles) {
+        const form = new FormData();
+        form.append("file", file);
+        try {
+          const res  = await fetch(`/documents/upload?tenant=${TENANT}`, { method: "POST", body: form });
+          const data = await res.json();
+          msgs.push(res.ok ? `✅ ${data.message}` : `❌ ${file.name}: ${data.detail}`);
+        } catch {
+          msgs.push(`❌ ${file.name}: bağlantı hatası`);
+        }
+        done++;
+        bar.style.width = (done / selectedFiles.length * 100) + "%";
+      }
+
+      status.className = msgs.every(m => m.startsWith("✅")) ? "ok" : "err";
+      status.textContent = msgs.join(" | ");
+      uploadBtn.textContent = "Dosya Seçin";
+      uploadBtn.disabled = true;
+      selectedFiles = [];
+      fileInput.value = "";
+      await loadDocs();
+    });
+
+    loadDocs();
+
+    // --- Widget Özelleştirme ---
+    let selectedIcon = "💬";
+
+    async function loadSettings() {
+      const res = await fetch(`/settings?tenant=${TENANT}`);
+      const s   = await res.json();
+      document.getElementById("bot-name").value    = s.bot_name;
+      document.getElementById("welcome-msg").value = s.welcome_message;
+      document.getElementById("color-picker").value = s.color;
+      document.getElementById("color-hex").value    = s.color;
+      selectedIcon = s.icon || "💬";
+      document.querySelectorAll(".icon-opt").forEach(el => {
+        el.classList.toggle("selected", el.dataset.icon === selectedIcon);
+      });
+      updatePreview();
+    }
+
+    function updatePreview() {
+      const color = document.getElementById("color-picker").value;
+      const name  = document.getElementById("bot-name").value || "Destek Asistanı";
+      const msg   = document.getElementById("welcome-msg").value || "";
+      document.getElementById("prev-btn").style.background = color;
+      document.getElementById("prev-btn").textContent = selectedIcon;
+      document.getElementById("prev-name").textContent = name;
+      document.getElementById("prev-msg").textContent  = msg;
+    }
+
+    document.getElementById("bot-name").addEventListener("input", updatePreview);
+    document.getElementById("welcome-msg").addEventListener("input", updatePreview);
+
+    document.getElementById("color-picker").addEventListener("input", e => {
+      document.getElementById("color-hex").value = e.target.value;
+      updatePreview();
+    });
+
+    document.getElementById("color-hex").addEventListener("input", e => {
+      const val = e.target.value;
+      if (/^#[0-9a-fA-F]{6}$/.test(val)) {
+        document.getElementById("color-picker").value = val;
+        updatePreview();
+      }
+    });
+
+    document.getElementById("icon-grid").addEventListener("click", e => {
+      const opt = e.target.closest(".icon-opt");
+      if (!opt) return;
+      selectedIcon = opt.dataset.icon;
+      document.querySelectorAll(".icon-opt").forEach(el => el.classList.remove("selected"));
+      opt.classList.add("selected");
+      updatePreview();
+    });
+
+    document.getElementById("save-btn").addEventListener("click", async () => {
+      const status = document.getElementById("save-status");
+      const body = {
+        bot_name:        document.getElementById("bot-name").value,
+        welcome_message: document.getElementById("welcome-msg").value,
+        color:           document.getElementById("color-picker").value,
+        icon:            selectedIcon,
+      };
+      const res = await fetch(`/settings?tenant=${TENANT}`, { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify(body) });
+      if (res.ok) {
+        status.className = "ok";
+        status.textContent = "✅ Ayarlar kaydedildi. Widget otomatik güncellendi.";
+      } else {
+        status.className = "err";
+        status.textContent = "❌ Kayıt başarısız.";
+      }
+      setTimeout(() => status.textContent = "", 3000);
+    });
+
+    loadSettings();
+
+    // Feedback
+    async function loadFeedback() {
+      const res  = await fetch(`/feedback?tenant=${TENANT}`);
+      const data = await res.json();
+
+      const total = data.length;
+      const ups   = data.filter(d => d.rating === "up").length;
+      const downs = data.filter(d => d.rating === "down").length;
+      const rate  = total ? Math.round(ups / total * 100) + "%" : "—";
+
+      document.getElementById("total-count").textContent = total || "—";
+      document.getElementById("up-count").textContent    = ups   || "—";
+      document.getElementById("down-count").textContent  = downs || "—";
+      document.getElementById("sat-rate").textContent    = rate;
+
+      const list  = document.getElementById("feedback-list");
+      const bads  = data.filter(d => d.rating === "down").reverse();
+
+      if (!bads.length) {
+        list.innerHTML = '<p class="empty-state">Henüz olumsuz puanlama yok.</p>';
+        return;
+      }
+
+      list.innerHTML = bads.map(d => `
+        <div class="feedback-item">
+          <div class="fi-q">❓ ${d.question}</div>
+          <div class="fi-a">${d.answer.slice(0, 200)}${d.answer.length > 200 ? "…" : ""}</div>
+          <div class="fi-meta">${d.timestamp}</div>
+        </div>
+      `).join("");
+    }
+
+    loadFeedback();
+
+    // Analytics
+    async function loadAnalytics() {
+      const res  = await fetch(`/analytics?tenant=${TENANT}`);
+      const data = await res.json();
+
+      // En çok sorulanlar
+      const topEl = document.getElementById("top-questions");
+      if (data.top_questions.length) {
+        topEl.innerHTML = data.top_questions.map((q, i) => `
+          <div class="rank-item">
+            <div class="rank-num">${i + 1}</div>
+            <div class="rank-q">${q.question}</div>
+            <div class="rank-c">${q.count}×</div>
+          </div>
+        `).join("");
+      } else {
+        topEl.innerHTML = '<p class="empty-state">Henüz soru yok.</p>';
+      }
+
+      // Günlük aktivite
+      const chartEl = document.getElementById("bar-chart");
+      if (data.daily_activity.length) {
+        const max = Math.max(...data.daily_activity.map(d => d.count));
+        chartEl.innerHTML = data.daily_activity.map(d => {
+          const h = max ? Math.round((d.count / max) * 72) : 4;
+          const label = d.date.slice(5);
+          return `
+            <div class="bar-col">
+              <div class="bar-cnt">${d.count}</div>
+              <div class="bar-fill" style="height:${h}px"></div>
+              <div class="bar-lbl">${label}</div>
+            </div>
+          `;
+        }).join("");
+      } else {
+        chartEl.innerHTML = '<p class="empty-state" style="font-size:.8rem">Henüz veri yok.</p>';
+      }
+
+      // Yanıtsız sorular
+      const unansEl = document.getElementById("unanswered-list");
+      if (data.unanswered.length) {
+        unansEl.innerHTML = [...data.unanswered].reverse().map(u => `
+          <div class="unans-item">
+            <div class="unans-q">❓ ${u.question}</div>
+            <div class="unans-t">${u.timestamp}</div>
+          </div>
+        `).join("");
+      } else {
+        unansEl.innerHTML = '<p class="empty-state">Henüz yanıtsız soru yok.</p>';
+      }
+    }
+
+    loadAnalytics();
+
+    // Müşteri Geri Bildirimleri
+    async function loadCustomerFeedback() {
+      const res  = await fetch(`/customer-feedback?tenant=${TENANT}`);
+      const data = await res.json();
+
+      const total       = data.length;
+      const complaints  = data.filter(d => d.type === "şikayet").length;
+      const suggestions = data.filter(d => d.type === "öneri").length;
+      const opinions    = data.filter(d => d.type === "görüş").length;
+
+      document.getElementById("cf-total").textContent      = total       || "—";
+      document.getElementById("cf-complaints").textContent = complaints  || "—";
+      document.getElementById("cf-suggestions").textContent= suggestions || "—";
+      document.getElementById("cf-opinions").textContent   = opinions    || "—";
+
+      const list = document.getElementById("cf-list");
+      if (!data.length) {
+        list.innerHTML = '<p class="empty-state">Henüz geri bildirim yok.</p>';
+        return;
+      }
+
+      const typeMap = {
+        "şikayet": { cls: "sikayet", emoji: "🔴" },
+        "öneri":   { cls: "oneri",   emoji: "💡" },
+        "görüş":   { cls: "gorus",   emoji: "💬" },
+      };
+
+      list.innerHTML = [...data].reverse().map(d => {
+        const t = typeMap[d.type] || { cls: "gorus", emoji: "💬" };
+        return `
+          <div class="feedback-item">
+            <div class="fi-q">${t.emoji} ${d.text}</div>
+            <div class="fi-meta">
+              <span class="cf-badge ${t.cls}">${d.type}</span>
+              &nbsp; ${d.timestamp}
+            </div>
+          </div>
+        `;
+      }).join("");
+    }
+
+    loadCustomerFeedback();
+  </script>
+</body>
+</html>

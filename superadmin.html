@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Müşteri Yönetimi</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background: #f0f2f5; padding: 40px 20px; }
+    .container { max-width: 860px; margin: 0 auto; display: flex; flex-direction: column; gap: 24px; }
+    header { display: flex; align-items: center; justify-content: space-between; }
+    header h1 { font-size: 1.4rem; color: #1a1a2e; }
+    header a { font-size: .85rem; color: #dc2626; text-decoration: none; }
+    .card { background: #fff; border-radius: 14px; box-shadow: 0 2px 12px rgba(0,0,0,.07); padding: 28px; }
+    .card h2 { font-size: 1rem; color: #1a1a2e; margin-bottom: 16px; }
+
+    /* Yeni müşteri formu */
+    .new-row { display: flex; gap: 10px; }
+    .new-row input {
+      flex: 1; padding: 10px 14px; border: 1.5px solid #ddd; border-radius: 8px;
+      font-size: .9rem; outline: none;
+    }
+    .new-row input:focus { border-color: #1a1a2e; }
+    .new-row button {
+      padding: 0 20px; background: #1a1a2e; color: #fff; border: none;
+      border-radius: 8px; font-size: .9rem; font-weight: 600; cursor: pointer;
+    }
+    .new-row button:hover { background: #2d2d4e; }
+    #create-status { font-size: .83rem; margin-top: 8px; min-height: 18px; }
+    #create-status.ok  { color: #16a34a; }
+    #create-status.err { color: #dc2626; }
+
+    /* Müşteri listesi */
+    .tenant-item {
+      display: flex; align-items: center; gap: 14px;
+      padding: 14px 16px; background: #f8f8fb;
+      border-radius: 9px; border: 1px solid #eee; margin-bottom: 10px;
+    }
+    .tenant-avatar {
+      width: 40px; height: 40px; border-radius: 50%; background: #1a1a2e;
+      color: #fff; display: flex; align-items: center; justify-content: center;
+      font-size: 1rem; font-weight: 700; flex-shrink: 0;
+    }
+    .tenant-info { flex: 1; }
+    .tenant-name { font-size: .95rem; font-weight: 600; color: #1a1a2e; }
+    .tenant-meta { font-size: .78rem; color: #999; margin-top: 2px; }
+    .tenant-actions { display: flex; gap: 8px; }
+    .btn-manage {
+      padding: 6px 14px; background: #1a1a2e; color: #fff; border: none;
+      border-radius: 7px; font-size: .82rem; font-weight: 600; cursor: pointer;
+      text-decoration: none; display: inline-flex; align-items: center;
+    }
+    .btn-manage:hover { background: #2d2d4e; }
+    .btn-del {
+      padding: 6px 12px; background: none; border: 1.5px solid #fca5a5;
+      color: #dc2626; border-radius: 7px; font-size: .82rem; cursor: pointer;
+    }
+    .btn-del:hover { background: #fef2f2; }
+
+    /* Widget kodu */
+    .snippet { background: #1a1a2e; color: #a8e6cf; border-radius: 8px; padding: 12px 14px; font-family: monospace; font-size: .78rem; word-break: break-all; position: relative; margin-top: 8px; }
+    .copy-btn { position: absolute; top: 8px; right: 8px; background: #fff1; color: #fff; border: 1px solid #fff3; border-radius: 5px; padding: 3px 8px; font-size: .72rem; cursor: pointer; }
+    .copy-btn:hover { background: #fff2; }
+
+    .empty-state { text-align: center; color: #bbb; font-size: .9rem; padding: 20px; }
+    #tenant-list { min-height: 60px; }
+  </style>
+</head>
+<body>
+<div class="container">
+  <header>
+    <h1>Müşteri Yönetimi</h1>
+    <a href="/logout">Çıkış</a>
+  </header>
+
+  <!-- Yeni müşteri -->
+  <div class="card">
+    <h2>Yeni Müşteri Ekle</h2>
+    <div class="new-row">
+      <input type="text" id="new-name" placeholder="Müşteri adı (örn: Mağaza A)" />
+      <button onclick="createTenant()">+ Ekle</button>
+    </div>
+    <div id="create-status"></div>
+  </div>
+
+  <!-- Müşteri listesi -->
+  <div class="card">
+    <h2>Müşteriler</h2>
+    <div id="tenant-list"><p class="empty-state">Yükleniyor...</p></div>
+  </div>
+</div>
+
+<script>
+  const BASE = window.location.origin;
+
+  async function loadTenants() {
+    const res     = await fetch("/tenants");
+    const tenants = await res.json();
+    const list    = document.getElementById("tenant-list");
+
+    if (!tenants.length) {
+      list.innerHTML = '<p class="empty-state">Henüz müşteri yok. Yukarıdan ekle.</p>';
+      return;
+    }
+
+    list.innerHTML = tenants.map(t => {
+      const initial    = t.name.charAt(0).toUpperCase();
+      const widgetCode = `&lt;script src="${BASE}/widget.js?tenant=${t.id}"&gt;&lt;/script&gt;`;
+      return `
+        <div class="tenant-item">
+          <div class="tenant-avatar">${initial}</div>
+          <div class="tenant-info">
+            <div class="tenant-name">${t.name}</div>
+            <div class="tenant-meta">ID: ${t.id} &nbsp;·&nbsp; ${t.doc_count} belge &nbsp;·&nbsp; ${t.created_at.slice(0,10)}</div>
+            <div class="snippet" id="snip-${t.id}">
+              ${widgetCode}
+              <button class="copy-btn" onclick="copySnippet('${t.id}', '${BASE}')">Kopyala</button>
+            </div>
+          </div>
+          <div class="tenant-actions">
+            <a class="btn-manage" href="/admin?tenant=${t.id}">Yönet</a>
+            <button class="btn-del" onclick="deleteTenant('${t.id}', '${t.name}')">Sil</button>
+          </div>
+        </div>
+      `;
+    }).join("");
+  }
+
+  async function createTenant() {
+    const name   = document.getElementById("new-name").value.trim();
+    const status = document.getElementById("create-status");
+    if (!name) { status.className = "err"; status.textContent = "Müşteri adı boş olamaz."; return; }
+
+    const res  = await fetch("/tenants", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name }),
+    });
+    const data = await res.json();
+
+    if (res.ok) {
+      status.className = "ok";
+      status.textContent = `✅ "${data.name}" eklendi (ID: ${data.id})`;
+      document.getElementById("new-name").value = "";
+      loadTenants();
+    } else {
+      status.className = "err";
+      status.textContent = "❌ " + (data.detail || "Hata");
+    }
+    setTimeout(() => status.textContent = "", 3000);
+  }
+
+  async function deleteTenant(id, name) {
+    if (!confirm(`"${name}" müşterisini ve tüm belgelerini silmek istediğinize emin misiniz?`)) return;
+    const res = await fetch(`/tenants/${id}`, { method: "DELETE" });
+    if (res.ok) loadTenants();
+  }
+
+  function copySnippet(id, base) {
+    navigator.clipboard.writeText(`<script src="${base}/widget.js?tenant=${id}"><\/script>`);
+    const btn = document.querySelector(`#snip-${id} .copy-btn`);
+    btn.textContent = "Kopyalandı!";
+    setTimeout(() => btn.textContent = "Kopyala", 2000);
+  }
+
+  document.getElementById("new-name").addEventListener("keydown", e => {
+    if (e.key === "Enter") createTenant();
+  });
+
+  loadTenants();
+</script>
+</body>
+</html>

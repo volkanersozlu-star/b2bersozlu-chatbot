@@ -1,0 +1,32 @@
+[
+  {
+    "timestamp": "2026-06-11T02:56:59",
+    "question": "Test soru",
+    "answer": "Test cevap",
+    "rating": "down"
+  },
+  {
+    "timestamp": "2026-06-11T02:57:58",
+    "question": "şirketinizden hizmet satın almak istiyorum size nasıl ulaşabiliriim",
+    "answer": "TechNova Yazılım'dan hizmet satın almak için aşağıdaki iletişim kanallarını kullanabilirsiniz:\n\n- **Satış Ekibi E-posta**: satis@technova.com.tr\n- **Genel Merkez**: Büyükdere Cad. No:123, Maslak, İstanbul\n- **Destek Hattı**: 0850 222 8686 (Hafta içi 09:00-18:00)\n- **Web Sitesi**: www.technova.com.tr\n- **Genel E-posta**: info@technova.com.tr\n- **Telefon**: +90 212 555 0100",
+    "rating": "up"
+  },
+  {
+    "timestamp": "2026-06-11T02:58:14",
+    "question": "selam",
+    "answer": "Selam! Size nasıl yardımcı olabilirim?",
+    "rating": "up"
+  },
+  {
+    "timestamp": "2026-06-11T02:58:34",
+    "question": "hangisi daha iyi",
+    "answer": "Bu konuda belgede bilgi bulunamadı. Belgelerde ürünlerin karşılaştırmalı bir değerlendirmesi veya \"daha iyi\" olduğuna dair bir ifade yer almamaktadır.",
+    "rating": "down"
+  },
+  {
+    "timestamp": "2026-06-11T03:21:05",
+    "question": "hey",
+    "answer": "Merhaba! Size nasıl yardımcı olabilirim? TechNova Yazılım A.Ş. hakkında bilgi almak istediğinizi belirtirseniz, belgelerdeki bilgilere dayanarak size yardımcı olabilirim.",
+    "rating": "up"
+  }
+]

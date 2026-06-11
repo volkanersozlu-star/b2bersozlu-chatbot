@@ -1,0 +1,72 @@
+[
+  {
+    "timestamp": "2026-06-11T03:03:14",
+    "question": "Kargo ücreti ne kadar?",
+    "answered": false
+  },
+  {
+    "timestamp": "2026-06-11T03:03:15",
+    "question": "Kargo ücreti ne kadar?",
+    "answered": false
+  },
+  {
+    "timestamp": "2026-06-11T03:03:16",
+    "question": "İade süresi kaç gün?",
+    "answered": false
+  },
+  {
+    "timestamp": "2026-06-11T03:03:17",
+    "question": "Taksit seçeneği var mı?",
+    "answered": false
+  },
+  {
+    "timestamp": "2026-06-11T03:09:28",
+    "question": "TechNova'nın kaç çalışanı var?",
+    "answered": true
+  },
+  {
+    "timestamp": "2026-06-11T03:09:30",
+    "question": "Peki bunlar hangi şehirde çalışıyor?",
+    "answered": true
+  },
+  {
+    "timestamp": "2026-06-11T03:20:58",
+    "question": "hey",
+    "answered": true
+  },
+  {
+    "timestamp": "2026-06-11T03:23:27",
+    "question": "Naber",
+    "answered": true
+  },
+  {
+    "timestamp": "2026-06-11T03:27:27",
+    "question": "5 kere 5",
+    "answered": true
+  },
+  {
+    "timestamp": "2026-06-11T03:30:03",
+    "question": "Bugün hava nasıl?",
+    "answered": true
+  },
+  {
+    "timestamp": "2026-06-11T03:30:04",
+    "question": "Bana bir fıkra anlat",
+    "answered": true
+  },
+  {
+    "timestamp": "2026-06-11T03:30:06",
+    "question": "TechNova'nın kaç çalışanı var?",
+    "answered": true
+  },
+  {
+    "timestamp": "2026-06-11T03:30:07",
+    "question": "Taksit seçeneği var mı?",
+    "answered": true
+  },
+  {
+    "timestamp": "2026-06-11T03:44:10",
+    "question": "5 kere 5",
+    "answered": true
+  }
+]

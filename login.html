@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Giriş — PDF Chatbot Admin</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: #f0f2f5;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .card {
+      background: #fff;
+      border-radius: 16px;
+      box-shadow: 0 4px 24px rgba(0,0,0,0.10);
+      padding: 40px 36px;
+      width: 100%;
+      max-width: 380px;
+    }
+
+    .logo {
+      font-size: 2rem;
+      text-align: center;
+      margin-bottom: 8px;
+    }
+
+    h1 {
+      text-align: center;
+      font-size: 1.2rem;
+      color: #1a1a2e;
+      margin-bottom: 4px;
+    }
+
+    .sub {
+      text-align: center;
+      font-size: 0.83rem;
+      color: #999;
+      margin-bottom: 28px;
+    }
+
+    label {
+      display: block;
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: #444;
+      margin-bottom: 6px;
+    }
+
+    input[type="password"] {
+      width: 100%;
+      padding: 12px 14px;
+      border: 1.5px solid #ddd;
+      border-radius: 9px;
+      font-size: 0.95rem;
+      outline: none;
+      transition: border-color 0.2s;
+      margin-bottom: 10px;
+    }
+
+    input[type="password"]:focus { border-color: #1a1a2e; }
+
+    .error {
+      font-size: 0.82rem;
+      color: #dc2626;
+      margin-bottom: 14px;
+      min-height: 18px;
+      text-align: center;
+    }
+
+    button {
+      width: 100%;
+      padding: 13px;
+      background: #1a1a2e;
+      color: #fff;
+      border: none;
+      border-radius: 9px;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    button:hover { background: #2d2d4e; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="logo">🔒</div>
+    <h1>Admin Girişi</h1>
+    <p class="sub">Devam etmek için şifrenizi girin</p>
+
+    <form method="POST" action="/login" id="form">
+      <label for="password">Şifre</label>
+      <input type="password" id="password" name="password" placeholder="••••••••" autofocus required />
+      <div class="error" id="err"></div>
+      <button type="submit">Giriş Yap</button>
+    </form>
+  </div>
+
+  <script>
+    // Hatalı giriş sonrası 401 dönerse hata mesajı göster
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("error") === "1") {
+      document.getElementById("err").textContent = "Hatalı şifre. Tekrar deneyin.";
+    }
+  </script>
+</body>
+</html>
